@@ -23,7 +23,9 @@ export const logout = () => {
 
 export const getProfile = async () => {
   const response = await API.get("/profile/");
+
   localStorage.setItem("user", JSON.stringify(response.data));
+
   return response.data;
 };
 
@@ -50,6 +52,20 @@ export const isAdmin = () => {
   return Boolean(user?.is_staff);
 };
 
+const capitalizeName = (name) => {
+  if (!name || typeof name !== "string") {
+    return "";
+  }
+
+  const cleanName = name.trim();
+
+  if (!cleanName) {
+    return "";
+  }
+
+  return cleanName.charAt(0).toUpperCase() + cleanName.slice(1).toLowerCase();
+};
+
 export const getDisplayName = () => {
   const user = getStoredUser();
 
@@ -57,13 +73,17 @@ export const getDisplayName = () => {
     return "";
   }
 
-  if (user.first_name) {
-    return user.first_name;
+  if (user.first_name && user.first_name.trim()) {
+    return capitalizeName(user.first_name);
   }
 
-  if (user.full_name) {
-    return user.full_name;
+  if (user.full_name && user.full_name.trim()) {
+    return capitalizeName(user.full_name.split(" ")[0]);
   }
 
-  return user.email;
+  if (user.username && user.username.trim()) {
+    return capitalizeName(user.username);
+  }
+
+  return "Customer";
 };

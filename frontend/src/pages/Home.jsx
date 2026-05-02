@@ -1,169 +1,130 @@
-import { useEffect, useState } from "react";
-import { ShieldCheck, Truck, RotateCcw, Lock, TrendingUp } from "lucide-react";
-import { getCategories, getStones } from "../services/stoneService";
+import { Link } from "react-router-dom";
+import { ShieldCheck, Lock, Truck, RotateCcw } from "lucide-react";
 import ProductCard from "../components/ProductCard";
+import { useEffect, useState } from "react";
+import { getStones } from "../services/stoneService";
+import { isAdmin } from "../services/authService";
 
 function Home() {
-  const [featured, setFeatured] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [featuredStones, setFeaturedStones] = useState([]);
+  const adminUser = isAdmin();
 
   useEffect(() => {
-    loadHome();
+    loadFeaturedStones();
   }, []);
 
-  const loadHome = async () => {
+  const loadFeaturedStones = async () => {
     try {
-      const stones = await getStones({ is_featured: true });
-      const cats = await getCategories();
-
-      setFeatured(stones.results || stones);
-      setCategories(cats.results || cats);
+      const data = await getStones();
+      const stones = data.results || data;
+      setFeaturedStones(stones.slice(0, 4));
     } catch (error) {
-      console.error("Home loading error:", error);
+      console.error("Featured stones error:", error);
     }
   };
 
   return (
     <main>
-      <section className="min-h-[680px] flex items-center bg-gradient-to-r from-black via-[#111111] to-black relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_70%_20%,#D4AF37,transparent_30%)]" />
+      <section className="relative overflow-hidden border-b border-[#D4AF37]/10">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/10 via-transparent to-transparent" />
 
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-10 items-center relative z-10">
-          <div>
-            <p className="text-[#D4AF37] tracking-[0.25em] text-sm uppercase">
+        <div className="relative max-w-7xl mx-auto px-6 py-20 lg:py-28 grid lg:grid-cols-2 gap-12 items-center">
+          <div className="animate-fade-up">
+            <p className="text-[#D4AF37] uppercase tracking-[0.35em] text-sm mb-6">
               Precious by Nature
             </p>
 
-            <h1 className="font-luxury text-5xl md:text-7xl mt-4 leading-tight">
+            <h1 className="font-luxury text-5xl md:text-7xl leading-tight">
               Discover the World’s Finest Precious Stones
             </h1>
 
-            <p className="text-gray-300 mt-6 text-lg max-w-xl">
+            <p className="text-gray-300 mt-8 text-lg max-w-xl leading-8">
               A modern marketplace for certified sapphires, rubies, emeralds,
               diamonds, and rare collector stones.
             </p>
 
-            <div className="flex flex-wrap gap-4 mt-8">
-              <a href="/stones" className="btn-gold px-8 py-3 rounded">
+            <div className="flex flex-wrap gap-4 mt-10">
+              <Link to="/stones" className="btn-gold px-8 py-3 rounded-xl">
                 Shop Now
-              </a>
+              </Link>
 
-              <a
-                href="/admin-dashboard"
-                className="border border-[#D4AF37] px-8 py-3 rounded hover:bg-[#D4AF37] hover:text-black transition"
-              >
-                Admin Dashboard
-              </a>
+              {adminUser && (
+                <Link
+                  to="/admin-dashboard"
+                  className="btn-outline-gold px-8 py-3 rounded-xl"
+                >
+                  Admin Dashboard
+                </Link>
+              )}
             </div>
           </div>
 
-          <div className="hidden md:block">
-            <div className="rounded-2xl border border-[#D4AF37]/30 p-4 shadow-2xl">
-              <div className="h-[440px] bg-[#151515] rounded-xl flex items-center justify-center relative overflow-hidden">
-                <div className="absolute w-72 h-72 rounded-full border-[18px] border-[#D4AF37] opacity-80" />
-                <div className="absolute w-44 h-44 rounded-full bg-blue-700 blur-sm opacity-90" />
-                <div className="relative text-center">
-                  <h2 className="font-luxury text-5xl text-white">GEMLUXE</h2>
-                  <p className="text-[#D4AF37] tracking-[0.3em] mt-3 text-sm">
-                    CERTIFIED STONES
-                  </p>
+          <div className="card-luxury rounded-2xl p-4 lg:p-6">
+            <div className="bg-[#151515] rounded-xl min-h-[360px] flex items-center justify-center">
+              <div className="w-64 h-64 rounded-full border-[18px] border-[#D4AF37] flex items-center justify-center shadow-2xl shadow-[#D4AF37]/20">
+                <div className="w-44 h-44 rounded-full bg-blue-700 blur-[1px] flex items-center justify-center">
+                  <div className="text-center">
+                    <h2 className="font-luxury text-4xl">GEMLUXE</h2>
+                    <p className="text-[#D4AF37] tracking-[0.3em] text-xs mt-2">
+                      CERTIFIED STONES
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          <div className="lg:col-span-2 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Feature
+              icon={<ShieldCheck />}
+              title="Certified Stones"
+              text="100% Authentic"
+            />
+            <Feature icon={<Lock />} title="Secure Payment" text="Safe" />
+            <Feature icon={<Truck />} title="All Ove The Country Shipping" text="Fast & Reliable" />
+            <Feature icon={<RotateCcw />} title="7-Day Returns" text="Hassle-Free" />
+          </div>
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 -mt-10 relative z-10">
-        <div className="grid md:grid-cols-4 gap-4">
-          {[
-            [ShieldCheck, "Certified Stones", "100% Authentic"],
-            [Lock, "Secure Payment", "Encrypted & Safe"],
-            [Truck, "Worldwide Shipping", "Fast & Reliable"],
-            [RotateCcw, "30-Day Returns", "Hassle-Free"],
-          ].map(([Icon, title, text]) => (
-            <div key={title} className="card-luxury rounded-xl p-5 flex gap-4">
-              <Icon className="text-[#D4AF37]" />
-              <div>
-                <h3 className="font-semibold">{title}</h3>
-                <p className="text-gray-400 text-sm">{text}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <section className="max-w-7xl mx-auto px-6 py-16">
+        <div className="flex items-end justify-between gap-4 mb-8">
+          <div>
+            <p className="text-[#D4AF37] uppercase tracking-[0.25em] text-sm">
+              Curated Selection
+            </p>
+            <h2 className="font-luxury text-4xl mt-2">Featured Stones</h2>
+          </div>
 
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="font-luxury text-4xl">Featured Stones</h2>
-
-          <a href="/stones" className="text-[#D4AF37]">
+          <Link to="/stones" className="text-[#D4AF37] hover:text-[#f5d879]">
             View All
-          </a>
+          </Link>
         </div>
 
-        {featured.length === 0 ? (
-          <p className="text-gray-400">
-            No featured stones yet. Run seed command or add stones from admin.
-          </p>
+        {featuredStones.length === 0 ? (
+          <div className="card-luxury rounded-xl p-8 text-gray-400">
+            No featured stones available yet.
+          </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featured.slice(0, 4).map((stone) => (
+            {featuredStones.map((stone) => (
               <ProductCard key={stone.id} stone={stone} />
             ))}
           </div>
         )}
       </section>
-
-      <section className="max-w-7xl mx-auto px-6 pb-20">
-        <h2 className="font-luxury text-4xl mb-8">Shop by Category</h2>
-
-        {categories.length === 0 ? (
-          <p className="text-gray-400">No categories yet.</p>
-        ) : (
-          <div className="grid sm:grid-cols-2 md:grid-cols-5 gap-4">
-            {categories.map((category) => (
-              <a
-                key={category.id}
-                href={`/stones?category=${category.id}`}
-                className="card-luxury p-8 rounded-xl text-center hover:border-[#D4AF37] transition"
-              >
-                <h3 className="text-xl font-luxury">{category.name}</h3>
-                <p className="text-gray-400 text-sm mt-2">
-                  Explore collection
-                </p>
-              </a>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="max-w-7xl mx-auto px-6 pb-20">
-        <div className="card-luxury rounded-xl p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <TrendingUp className="text-[#D4AF37]" />
-            <h2 className="font-luxury text-4xl">Market Trends</h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            <Trend title="Gold Price Index" value="$2,384.60 / oz" change="+1.35%" />
-            <Trend title="Diamond Index" value="18,732.40" change="-0.85%" danger />
-            <Trend title="Emerald Index" value="9,875.20" change="+2.15%" />
-          </div>
-        </div>
-      </section>
     </main>
   );
 }
 
-function Trend({ title, value, change, danger }) {
+function Feature({ icon, title, text }) {
   return (
-    <div className="bg-black/40 border border-[#D4AF37]/20 rounded-xl p-5">
-      <p className="text-gray-400">{title}</p>
-      <h3 className="text-2xl font-bold mt-2">{value}</h3>
-      <p className={danger ? "text-red-400 mt-2" : "text-green-400 mt-2"}>
-        {change}
-      </p>
+    <div className="card-luxury rounded-xl p-6 flex items-center gap-4">
+      <div className="text-[#D4AF37]">{icon}</div>
+      <div>
+        <h3 className="font-semibold">{title}</h3>
+        <p className="text-sm text-gray-400">{text}</p>
+      </div>
     </div>
   );
 }

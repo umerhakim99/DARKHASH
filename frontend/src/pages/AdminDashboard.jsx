@@ -1,10 +1,24 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Gem, Plus, Package, Tags, ShoppingBag, Users } from "lucide-react";
+import {
+  Gem,
+  Plus,
+  Tags,
+  ShoppingBag,
+  Users,
+  Pencil,
+  Trash2,
+  PackageCheck,
+  Clock,
+} from "lucide-react";
 
-import { getProfile } from "../services/authService";
+import { getProfile, isAdmin } from "../services/authService";
 import { getCategories, getStones } from "../services/stoneService";
-import { createCategory, deleteCategory, deleteStone } from "../services/adminService";
+import {
+  createCategory,
+  deleteCategory,
+  deleteStone,
+} from "../services/adminService";
 import { getOrders } from "../services/orderService";
 
 function AdminDashboard() {
@@ -14,22 +28,30 @@ function AdminDashboard() {
   const [stones, setStones] = useState([]);
   const [categories, setCategories] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [categoryForm, setCategoryForm] = useState({
     name: "",
     description: "",
   });
 
   useEffect(() => {
+    if (!isAdmin()) {
+      navigate("/dashboard");
+      return;
+    }
+
     loadAdmin();
   }, []);
 
   const loadAdmin = async () => {
     try {
+      setLoading(true);
+
       const user = await getProfile();
 
       if (!user.is_staff) {
-        alert("Only admin users can access this page.");
-        navigate("/");
+        navigate("/dashboard");
         return;
       }
 
@@ -45,6 +67,8 @@ function AdminDashboard() {
     } catch (error) {
       alert("Please login as admin first.");
       navigate("/login");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,37 +77,57 @@ function AdminDashboard() {
 
     try {
       await createCategory(categoryForm);
-      setCategoryForm({ name: "", description: "" });
-      loadAdmin();
+
+      setCategoryForm({
+        name: "",
+        description: "",
+      });
+
+      await loadAdmin();
     } catch (error) {
       alert("Could not create category.");
     }
   };
 
   const handleDeleteCategory = async (id) => {
-    if (!confirm("Delete this category?")) return;
+    if (!confirm("Delete this category?")) {
+      return;
+    }
 
     try {
       await deleteCategory(id);
-      loadAdmin();
+      await loadAdmin();
     } catch (error) {
       alert("Could not delete category. It may have stones assigned.");
     }
   };
 
   const handleDeleteStone = async (id) => {
-    if (!confirm("Delete this stone?")) return;
+    if (!confirm("Delete this stone?")) {
+      return;
+    }
 
     try {
       await deleteStone(id);
-      loadAdmin();
+      await loadAdmin();
     } catch (error) {
       alert("Could not delete stone.");
     }
   };
 
-  if (!profile) {
-    return <div className="p-10">Loading admin dashboard...</div>;
+  const pendingOrders = orders.filter((order) => order.status === "pending");
+  const completedOrders = orders.filter(
+    (order) => order.status === "delivered"
+  );
+
+  if (loading || !profile) {
+    return (
+      <main className="max-w-7xl mx-auto px-6 py-16">
+        <div className="card-luxury rounded-xl p-8 text-gray-400">
+          Loading admin dashboard...
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -99,34 +143,49 @@ function AdminDashboard() {
           </h1>
 
           <p className="text-gray-400 mt-2">
-            Manage stones, categories, images, certificates, and orders.
+            Manage stones, categories, products, inventory, and orders.
           </p>
         </div>
 
-        <Link
-          to="/admin-dashboard/stones/create"
-          className="btn-gold px-6 py-3 rounded flex items-center gap-2"
-        >
-          <Plus size={18} />
-          Add New Stone
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            to="/admin-dashboard/orders"
+            className="btn-outline-gold px-6 py-3 rounded-xl flex items-center gap-2"
+          >
+            <ShoppingBag size={18} />
+            Manage Orders
+          </Link>
+
+          <Link
+            to="/admin-dashboard/stones/create"
+            className="btn-gold px-6 py-3 rounded-xl flex items-center gap-2"
+          >
+            <Plus size={18} />
+            Add New Stone
+          </Link>
+        </div>
       </div>
 
       <section className="grid md:grid-cols-4 gap-4 mb-10">
         <StatCard icon={<Gem />} title="Total Stones" value={stones.length} />
         <StatCard icon={<Tags />} title="Categories" value={categories.length} />
-        <StatCard icon={<ShoppingBag />} title="Orders" value={orders.length} />
-        <StatCard icon={<Users />} title="Role" value="Admin" />
+        <StatCard icon={<Clock />} title="Pending Orders" value={pendingOrders.length} />
+        <StatCard icon={<PackageCheck />} title="Delivered" value={completedOrders.length} />
       </section>
 
       <section className="grid lg:grid-cols-[1fr_380px] gap-8">
         <div className="card-luxury rounded-xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-luxury text-3xl">Stone Inventory</h2>
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 className="font-luxury text-3xl">Stone Inventory</h2>
+              <p className="text-sm text-gray-400 mt-1">
+                Add, edit, delete, and manage product stock.
+              </p>
+            </div>
 
             <Link
               to="/admin-dashboard/stones/create"
-              className="text-[#D4AF37] text-sm"
+              className="text-[#D4AF37] text-sm hover:text-[#f5d879]"
             >
               Add Stone
             </Link>
@@ -139,7 +198,7 @@ function AdminDashboard() {
               {stones.map((stone) => (
                 <div
                   key={stone.id}
-                  className="border border-[#D4AF37]/20 rounded-xl p-4 flex items-center gap-4"
+                  className="border border-[#D4AF37]/20 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 hover:border-[#D4AF37]/50 transition"
                 >
                   {stone.images?.[0]?.image ? (
                     <img
@@ -155,20 +214,34 @@ function AdminDashboard() {
 
                   <div className="flex-1">
                     <h3 className="font-semibold">{stone.name}</h3>
+
                     <p className="text-gray-400 text-sm">
-                      {stone.category_detail?.name} • {stone.origin} • Stock {stone.stock}
+                      {stone.category_detail?.name || "No Category"} •{" "}
+                      {stone.origin} • Stock {stone.stock}
                     </p>
+
                     <p className="text-[#D4AF37] font-bold">
                       ${Number(stone.price).toLocaleString()}
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => handleDeleteStone(stone.id)}
-                    className="text-red-400 text-sm"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex gap-3">
+                    <Link
+                      to={`/admin-dashboard/stones/${stone.id}/edit`}
+                      className="btn-outline-gold px-4 py-2 rounded-lg text-sm flex items-center gap-2"
+                    >
+                      <Pencil size={15} />
+                      Edit
+                    </Link>
+
+                    <button
+                      onClick={() => handleDeleteStone(stone.id)}
+                      className="border border-red-500/40 text-red-400 px-4 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-red-500/10"
+                    >
+                      <Trash2 size={15} />
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -177,7 +250,11 @@ function AdminDashboard() {
 
         <aside className="space-y-8">
           <div className="card-luxury rounded-xl p-6">
-            <h2 className="font-luxury text-3xl mb-6">Create Category</h2>
+            <h2 className="font-luxury text-3xl mb-2">Create Category</h2>
+
+            <p className="text-sm text-gray-400 mb-6">
+              Add new stone categories for inventory organization.
+            </p>
 
             <form onSubmit={handleCreateCategory} className="space-y-4">
               <input
@@ -205,32 +282,90 @@ function AdminDashboard() {
                 }
               />
 
-              <button className="btn-gold w-full py-3 rounded">
+              <button className="btn-gold w-full py-3 rounded-xl">
                 Save Category
               </button>
             </form>
           </div>
 
           <div className="card-luxury rounded-xl p-6">
-            <h2 className="font-luxury text-3xl mb-6">Categories</h2>
+            <h2 className="font-luxury text-3xl mb-2">Categories</h2>
 
-            <div className="space-y-3">
-              {categories.map((category) => (
-                <div
-                  key={category.id}
-                  className="flex justify-between border border-[#D4AF37]/20 rounded p-3"
-                >
-                  <span>{category.name}</span>
+            <p className="text-sm text-gray-400 mb-6">
+              Delete categories that are not assigned to products.
+            </p>
 
-                  <button
-                    onClick={() => handleDeleteCategory(category.id)}
-                    className="text-red-400 text-sm"
+            {categories.length === 0 ? (
+              <p className="text-gray-400">No categories found.</p>
+            ) : (
+              <div className="space-y-3">
+                {categories.map((category) => (
+                  <div
+                    key={category.id}
+                    className="flex justify-between items-center border border-[#D4AF37]/20 rounded-lg p-3 hover:border-[#D4AF37]/50 transition"
                   >
-                    Delete
-                  </button>
-                </div>
-              ))}
-            </div>
+                    <div>
+                      <span className="block font-medium">{category.name}</span>
+                      {category.description && (
+                        <span className="block text-xs text-gray-500 mt-1">
+                          {category.description}
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => handleDeleteCategory(category.id)}
+                      className="text-red-400 text-sm hover:text-red-300"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="card-luxury rounded-xl p-6">
+            <h2 className="font-luxury text-3xl mb-2">Recent Orders</h2>
+
+            <p className="text-sm text-gray-400 mb-6">
+              View and update customer order status.
+            </p>
+
+            {orders.length === 0 ? (
+              <p className="text-gray-400">No orders yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {orders.slice(0, 5).map((order) => (
+                  <div
+                    key={order.id}
+                    className="border border-[#D4AF37]/20 rounded-lg p-3"
+                  >
+                    <div className="flex justify-between">
+                      <span className="font-semibold">Order #{order.id}</span>
+                      <span className="text-[#D4AF37] text-sm">
+                        {order.status}
+                      </span>
+                    </div>
+
+                    <p className="text-sm text-gray-400 mt-1">
+                      {order.full_name || order.username}
+                    </p>
+
+                    <p className="text-sm text-gray-400">
+                      ${Number(order.total_price).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+
+                <Link
+                  to="/admin-dashboard/orders"
+                  className="btn-outline-gold block text-center py-3 rounded-xl mt-4"
+                >
+                  Manage All Orders
+                </Link>
+              </div>
+            )}
           </div>
         </aside>
       </section>

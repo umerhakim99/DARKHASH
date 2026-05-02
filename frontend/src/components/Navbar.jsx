@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Gem,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import {
   getDisplayName,
+  getProfile,
   isAuthenticated,
   logout,
 } from "../services/authService";
@@ -18,12 +19,32 @@ import {
 function Navbar() {
   const navigate = useNavigate();
   const loggedIn = isAuthenticated();
-  const displayName = getDisplayName();
+
   const [menuOpen, setMenuOpen] = useState(false);
+  const [displayName, setDisplayName] = useState(getDisplayName());
+
+  useEffect(() => {
+    const loadUser = async () => {
+      if (!loggedIn) {
+        setDisplayName("");
+        return;
+      }
+
+      try {
+        await getProfile();
+        setDisplayName(getDisplayName());
+      } catch {
+        setDisplayName(getDisplayName());
+      }
+    };
+
+    loadUser();
+  }, [loggedIn]);
 
   const handleLogout = () => {
     logout();
     setMenuOpen(false);
+    setDisplayName("");
     navigate("/login");
   };
 
@@ -41,7 +62,7 @@ function Navbar() {
 
           <div>
             <h1 className="font-luxury text-xl tracking-wide group-hover:text-[#D4AF37] transition">
-              GEMLUXE
+              DARKHASH
             </h1>
             <p className="text-[10px] text-[#D4AF37] tracking-[0.25em]">
               PRECIOUS STONES
@@ -69,8 +90,8 @@ function Navbar() {
 
         <div className="hidden md:flex gap-3 items-center">
           {loggedIn && (
-            <span className="badge-gold max-w-[160px] truncate">
-              Hi, {displayName}
+            <span className="badge-gold max-w-[180px] truncate">
+              AoA, {displayName}
             </span>
           )}
 
@@ -107,7 +128,7 @@ function Navbar() {
           <div className="px-5 py-5 space-y-4">
             {loggedIn && (
               <div className="badge-gold inline-block">
-                Hi, {displayName}
+                AoA, {displayName}
               </div>
             )}
 

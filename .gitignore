@@ -1,0 +1,26 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+db.sqlite3
+
+# Django secrets
+.env
+*.env
+
+# Media uploads
+backend/media/
+
+# Static/build files
+backend/staticfiles/
+
+# Node / React
+frontend/node_modules/
+frontend/dist/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
